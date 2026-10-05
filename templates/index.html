@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Resume Analyzer</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0c0f14;
+  --surface: #141922;
+  --surface-2: #1a2130;
+  --line: #262e3d;
+  --text: #e8ebf2;
+  --muted: #8b94a7;
+  --accent: #7c83ff;
+  --accent-2: #5b62f0;
+  --good: #3ecf8e;
+  --okay: #f5b942;
+  --bad: #ff6b6b;
+}
+* { box-sizing: border-box; }
+html { color-scheme: dark; }
+body {
+  margin: 0;
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  background:
+    radial-gradient(900px 420px at 80% -10%, rgba(124,131,255,.16), transparent 60%),
+    var(--bg);
+  color: var(--text);
+  line-height: 1.55;
+  min-height: 100vh;
+}
+.nav {
+  max-width: 1160px; margin: 0 auto; padding: 20px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.logo { font-family: "Sora", sans-serif; font-weight: 800; font-size: 20px; letter-spacing: -.3px; display: flex; align-items: center; gap: 10px; }
+.logo i { width: 26px; height: 26px; border-radius: 8px; background: linear-gradient(135deg, var(--accent), #4fd1c5); display: inline-block; }
+.pill { font-size: 12px; color: var(--muted); border: 1px solid var(--line); padding: 5px 12px; border-radius: 999px; }
+
+.hero { max-width: 1160px; margin: 0 auto; padding: 28px 24px 34px; }
+.hero h1 { font-family: "Sora", sans-serif; font-size: clamp(32px, 5vw, 54px); line-height: 1.08; letter-spacing: -1.5px; margin: 0 0 14px; max-width: 760px; }
+.hero p { margin: 0; color: var(--muted); font-size: 18px; max-width: 560px; }
+
+main {
+  max-width: 1160px; margin: 0 auto; padding: 0 24px 64px;
+  display: grid; grid-template-columns: 400px 1fr; gap: 24px; align-items: start;
+}
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 24px; }
+.sticky { position: sticky; top: 20px; }
+h2 { font-family: "Sora", sans-serif; font-size: 16px; margin: 0 0 18px; }
+
+.lbl { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; font-weight: 600; margin: 20px 0 8px; }
+.lbl:first-of-type { margin-top: 0; }
+.lbl span { color: var(--muted); font-weight: 400; font-size: 12px; }
+.linkbtn { background: none; border: 0; color: var(--accent); font: inherit; font-size: 12px; cursor: pointer; padding: 0; }
+.linkbtn:hover { text-decoration: underline; }
+
+.drop {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center;
+  border: 1.5px dashed #343e52; border-radius: 12px; padding: 24px 14px;
+  background: var(--surface-2); color: var(--muted); font-size: 14px; cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.drop:hover, .drop.drag { border-color: var(--accent); background: #1d2540; }
+.drop svg { width: 26px; height: 26px; stroke: var(--accent); fill: none; stroke-width: 1.8; }
+.drop b { color: var(--text); font-weight: 600; word-break: break-all; }
+.drop input { display: none; }
+.drop.has { border-style: solid; border-color: var(--good); }
+.drop.has svg { stroke: var(--good); }
+
+textarea {
+  width: 100%; min-height: 190px; resize: vertical;
+  background: var(--surface-2); color: var(--text);
+  border: 1px solid var(--line); border-radius: 12px; padding: 14px;
+  font: inherit; font-size: 14px;
+}
+textarea::placeholder { color: #5d667a; }
+textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124,131,255,.22); }
+.drop:focus-within, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.go {
+  width: 100%; margin-top: 20px; padding: 14px; border: 0; border-radius: 12px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff; font: inherit; font-weight: 600; font-size: 15px; cursor: pointer;
+  transition: transform .1s, filter .15s;
+}
+.go:hover { filter: brightness(1.1); }
+.go:active { transform: scale(.985); }
+.go:disabled { opacity: .6; cursor: wait; }
+
+.empty { text-align: center; padding: 70px 20px; color: var(--muted); }
+.empty b { display: block; color: var(--text); font-family: "Sora", sans-serif; font-size: 18px; margin-bottom: 8px; }
+.error { background: rgba(255,107,107,.1); border: 1px solid rgba(255,107,107,.35); color: #ffb0b0; padding: 14px 16px; border-radius: 12px; }
+
+.sk { border-radius: 10px; background: linear-gradient(90deg, #1a2130 25%, #232c3f 50%, #1a2130 75%); background-size: 200% 100%; animation: sh 1.3s infinite; }
+@keyframes sh { to { background-position: -200% 0; } }
+
+.top { display: grid; grid-template-columns: 240px 1fr; gap: 28px; align-items: center; }
+.gauge { position: relative; width: 240px; }
+.gauge svg { width: 100%; display: block; }
+.g-bg { fill: none; stroke: #232c3f; stroke-width: 14; stroke-linecap: round; }
+.g-fg { fill: none; stroke-width: 14; stroke-linecap: round; stroke-dasharray: 251.33; stroke-dashoffset: 251.33; transition: stroke-dashoffset 1.1s cubic-bezier(.2,.8,.2,1); }
+.g-num { position: absolute; left: 0; right: 0; bottom: 2px; text-align: center; }
+.g-num strong { font-family: "Sora", sans-serif; font-size: 46px; line-height: 1; letter-spacing: -1.5px; }
+.g-num small { display: block; color: var(--muted); font-size: 12px; margin-top: 4px; }
+.summary h3 { font-family: "Sora", sans-serif; font-size: 24px; margin: 0 0 6px; letter-spacing: -.5px; }
+.summary p { margin: 0 0 14px; color: var(--muted); }
+
+.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 26px; }
+.tile { background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+.tile .n { font-family: "Sora", sans-serif; font-size: 26px; font-weight: 700; letter-spacing: -.5px; }
+.tile .t { font-size: 13px; color: var(--muted); margin: 2px 0 10px; }
+.track { height: 6px; background: #252e41; border-radius: 4px; overflow: hidden; }
+.fill { height: 100%; width: 0; border-radius: 4px; transition: width 1s cubic-bezier(.2,.8,.2,1); }
+.tile.off { opacity: .45; }
+
+.sec { margin-top: 26px; padding-top: 24px; border-top: 1px solid var(--line); }
+.sec h3 { font-family: "Sora", sans-serif; font-size: 15px; margin: 0 0 14px; display: flex; align-items: center; gap: 8px; }
+.count { font-family: "Inter", sans-serif; font-size: 12px; font-weight: 500; color: var(--muted); background: var(--surface-2); border: 1px solid var(--line); padding: 1px 9px; border-radius: 999px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font-size: 13px; font-weight: 500; padding: 6px 13px; border-radius: 8px; border: 1px solid; }
+.chip.have { color: var(--good); background: rgba(62,207,142,.1); border-color: rgba(62,207,142,.3); }
+.chip.lack { color: var(--bad); background: rgba(255,107,107,.1); border-color: rgba(255,107,107,.3); }
+.none { margin: 0; color: var(--muted); font-size: 14px; }
+
+.tips { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.tips li { background: var(--surface-2); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 10px; padding: 12px 14px; font-size: 14px; }
+
+.checks { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.chk { display: flex; align-items: center; gap: 10px; font-size: 14px; background: var(--surface-2); border: 1px solid var(--line); padding: 11px 14px; border-radius: 10px; }
+.dot { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700; color: #0c0f14; flex-shrink: 0; }
+.chk.yes .dot { background: var(--good); }
+.chk.no .dot { background: var(--bad); }
+
+.actions { display: flex; gap: 10px; margin-top: 26px; }
+.btn2 { background: var(--surface-2); border: 1px solid var(--line); color: var(--text); font: inherit; font-size: 14px; padding: 10px 16px; border-radius: 10px; cursor: pointer; }
+.btn2:hover { border-color: var(--accent); }
+
+.reveal { opacity: 0; transform: translateY(8px); animation: up .5s ease forwards; }
+@keyframes up { to { opacity: 1; transform: none; } }
+
+@media (max-width: 960px) {
+  main { grid-template-columns: 1fr; }
+  .sticky { position: static; }
+}
+@media (max-width: 620px) {
+  .top { grid-template-columns: 1fr; justify-items: center; text-align: center; }
+  .tiles { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .g-fg, .fill { transition: none; }
+  .reveal, .sk { animation: none; opacity: 1; transform: none; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+    <div class="logo"><i></i>AI Resume Analyzer</div>
+  <span class="pill">FastAPI · PyMuPDF · Sentence-Transformers</span>
+</nav>
+
+<section class="hero">
+  <h1>Know how your resume stacks up before a recruiter does.</h1>
+  <p>Upload a PDF or DOCX resume, paste the job description, and get a score based on skills, semantic similarity and completeness.</p>
+</section>
+
+<main>
+  <form id="resume-form" class="card sticky" action="/upload" method="post" enctype="multipart/form-data">
+    <h2>Analyze a resume</h2>
+
+    <div class="lbl">Resume <span>PDF or DOCX</span></div>
+    <label class="drop" id="drop">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L7 9m5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+      <div id="drop-text">Choose a PDF or DOCX, or drag it here</div>
+      <input type="file" id="resume" name="file" accept=".pdf,.docx" required>
+    </label>
+
+    <div class="lbl">Job description <button type="button" class="linkbtn" id="sample">Use a sample</button></div>
+    <textarea id="jd" name="job_description" placeholder="Paste the job description here..." required></textarea>
+
+    <button type="submit" class="go" id="go">Analyze resume</button>
+  </form>
+
+  <section class="card" id="results" aria-live="polite">
+    <div class="empty">
+      <b>Your report will appear here</b>
+      Add a resume and a job description to get started.
+    </div>
+  </section>
+</main>
+
+<script>
+const form = document.getElementById("resume-form");
+const results = document.getElementById("results");
+const fileInput = document.getElementById("resume");
+const drop = document.getElementById("drop");
+const dropText = document.getElementById("drop-text");
+const goBtn = document.getElementById("go");
+const jd = document.getElementById("jd");
+const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function cls(s) { return s >= 70 ? "good" : s >= 50 ? "okay" : "bad"; }
+function col(s) { return "var(--" + cls(s) + ")"; }
+function esc(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+
+document.getElementById("sample").addEventListener("click", function () {
+  jd.value = "We are hiring a Software Engineer with strong Python and SQL skills. " +
+    "You will build REST APIs using FastAPI or Django, work with PostgreSQL and MongoDB, " +
+    "use Git and Docker daily, and deploy services on AWS. Experience with machine learning " +
+    "and JavaScript or React is a plus.";
+});
+
+function showFile() {
+  if (fileInput.files.length) {
+    dropText.innerHTML = "<b>" + esc(fileInput.files[0].name) + "</b>Click to change";
+    drop.classList.add("has");
+  }
+}
+fileInput.addEventListener("change", showFile);
+["dragenter", "dragover"].forEach(function (e) {
+  drop.addEventListener(e, function (ev) { ev.preventDefault(); drop.classList.add("drag"); });
+});
+["dragleave", "drop"].forEach(function (e) {
+  drop.addEventListener(e, function (ev) { ev.preventDefault(); drop.classList.remove("drag"); });
+});
+drop.addEventListener("drop", function (ev) {
+  if (ev.dataTransfer.files.length) { fileInput.files = ev.dataTransfer.files; showFile(); }
+});
+
+function skeleton() {
+  return "<div class='top'><div class='sk' style='height:130px'></div><div><div class='sk' style='height:28px;width:70%;margin-bottom:12px'></div><div class='sk' style='height:16px;width:90%'></div></div></div>" +
+    "<div class='tiles'><div class='sk' style='height:96px'></div><div class='sk' style='height:96px'></div><div class='sk' style='height:96px'></div></div>" +
+    "<div class='sk' style='height:120px;margin-top:26px'></div>";
+}
+
+function tile(title, value, off) {
+  return "<div class='tile" + (off ? " off" : "") + "'>" +
+    "<div class='n " + (off ? "" : cls(value)) + "'>" + (off ? "n/a" : value + "%") + "</div>" +
+    "<div class='t'>" + title + "</div>" +
+    "<div class='track'><div class='fill' data-w='" + (off ? 0 : Math.min(value, 100)) + "' style='background:" + col(value) + "'></div></div></div>";
+}
+function chips(list, c, msg) {
+  if (!list.length) return "<p class='none'>" + msg + "</p>";
+  return "<div class='chips'>" + list.map(function (s) { return "<span class='chip " + c + "'>" + esc(s) + "</span>"; }).join("") + "</div>";
+}
+function chk(ok, yes, no) {
+  return "<div class='chk " + (ok ? "yes" : "no") + "'><span class='dot'>" + (ok ? "✓" : "✕") + "</span>" + (ok ? yes : no) + "</div>";
+}
+
+function animate(overall) {
+  const fg = document.querySelector(".g-fg");
+  const num = document.getElementById("g-val");
+  requestAnimationFrame(function () {
+    fg.style.strokeDashoffset = 251.33 * (1 - Math.min(overall, 100) / 100);
+    document.querySelectorAll(".fill").forEach(function (f) { f.style.width = f.dataset.w + "%"; });
+  });
+  if (reduce) { num.textContent = overall; return; }
+  const start = performance.now();
+  (function tick(now) {
+    const p = Math.min((now - start) / 1000, 1);
+    num.textContent = Math.round(overall * (1 - Math.pow(1 - p, 3)));
+    if (p < 1) requestAnimationFrame(tick);
+  })(start);
+}
+
+form.addEventListener("submit", async function (event) {
+  event.preventDefault();
+  goBtn.disabled = true; goBtn.textContent = "Analyzing...";
+  results.innerHTML = skeleton();
+
+  try {
+    const response = await fetch("/upload", { method: "POST", body: new FormData(form) });
+    if (!response.ok) throw new Error("server");
+    const data = await response.json();
+    if (data.error) { results.innerHTML = "<div class='error'>" + esc(data.error) + "</div>"; return; }
+
+    const noSkills = data.matched_skills.length + data.missing_skills.length === 0;
+    const overall = Math.round(data.overall_score);
+    const total = data.matched_skills.length + data.missing_skills.length;
+
+    results.innerHTML =
+      "<div class='top reveal'>" +
+        "<div class='gauge'>" +
+          "<svg viewBox='0 0 200 110'><path class='g-bg' d='M20 100 A80 80 0 0 1 180 100'/>" +
+          "<path class='g-fg' style='stroke:" + col(overall) + "' d='M20 100 A80 80 0 0 1 180 100'/></svg>" +
+          "<div class='g-num'><strong id='g-val'>0</strong><strong>%</strong><small>overall score</small></div>" +
+        "</div>" +
+        "<div class='summary'><h3 class='" + cls(overall) + "'>" + esc(data.overall_label) + " match</h3>" +
+        "<p>" + (noSkills
+          ? "No known skills were found in this job description, so the score uses meaning and completeness only."
+          : "You match " + data.matched_skills.length + " of " + total + " skills this job asks for.") + "</p></div>" +
+      "</div>" +
+
+      "<div class='tiles reveal' style='animation-delay:.1s'>" +
+        tile("Skill match", data.match_percentage, noSkills) +
+        tile("Semantic match", data.semantic_score, false) +
+        tile("Completeness", data.resume_completeness, false) +
+      "</div>" +
+
+      "<div class='sec reveal' style='animation-delay:.2s'><h3>Skills you have <span class='count'>" + data.matched_skills.length + "</span></h3>" +
+        chips(data.matched_skills, "have", "No matching skills found.") + "</div>" +
+      "<div class='sec reveal' style='animation-delay:.25s'><h3>Skills to add <span class='count'>" + data.missing_skills.length + "</span></h3>" +
+        chips(data.missing_skills, "lack", "Nothing missing. Nice!") + "</div>" +
+
+      "<div class='sec reveal' style='animation-delay:.3s'><h3>Recommendations</h3>" +
+        (data.recommendations.length
+          ? "<ul class='tips'>" + data.recommendations.map(function (r) { return "<li>" + esc(r) + "</li>"; }).join("") + "</ul>"
+          : "<p class='none'>No recommendations. Your resume covers everything we check.</p>") + "</div>" +
+
+      "<div class='sec reveal' style='animation-delay:.35s'><h3>Resume checks</h3><div class='checks'>" +
+        chk(data.email_found, "Email found", "Email missing") +
+        chk(data.phone_found, "Phone found", "Phone missing") +
+        chk(data.education_found, "Education section", "No education section") +
+        chk(data.experience_found, "Experience section", "No experience section") +
+        chk(data.projects_found, "Projects section", "No projects section") +
+        chk(data.skills_section_found, "Skills section", "No skills section") +
+      "</div></div>" +
+
+      "<div class='actions'><button type='button' class='btn2' id='copy'>Copy summary</button></div>";
+
+    animate(overall);
+
+    document.getElementById("copy").addEventListener("click", function () {
+      const t = "Resume score: " + overall + "% (" + data.overall_label + ")\n" +
+        "Skill match: " + (noSkills ? "n/a" : data.match_percentage + "%") + " | Semantic: " + data.semantic_score + "% | Completeness: " + data.resume_completeness + "%\n" +
+        "Missing skills: " + (data.missing_skills.join(", ") || "none");
+      navigator.clipboard.writeText(t).then(function () {
+        const b = document.getElementById("copy"); b.textContent = "Copied"; setTimeout(function () { b.textContent = "Copy summary"; }, 1500);
+      });
+    });
+  } catch (err) {
+    results.innerHTML = "<div class='error'>Something went wrong while analyzing the resume. Please try again.</div>";
+  } finally {
+    goBtn.disabled = false; goBtn.textContent = "Analyze resume";
+  }
+});
+</script>
+</body>
+</html>
