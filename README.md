@@ -2,7 +2,7 @@
 
 A web app that analyzes a resume (PDF or DOCX) against a job description and gives an overall score, matched and missing skills, and practical suggestions to improve the resume.
 
-Built as a BTech final-year project.
+Built as a BTech project.
 
 ![Home page](screenshots/home.png)
 
